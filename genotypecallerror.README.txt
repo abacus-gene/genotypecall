@@ -1,0 +1,18 @@
+genotypecall
+
+Notes by Ziheng, 2021-4-1
+
+How to reproduce figure 1 in Thawornwattana1 et al. 2021.
+
+When you run the program, it will ask you to input the 
+per-read per-base error rate 
+Type a value and hit Enter.
+
+If you run the program multiple times, using the values 0.1, 0.05, 0.01, 0.005, 0.001, 
+the program will create summary results in the files 
+genotypecallingerror_e0.1.txt, genotypecallingerror_e0.05.txt, etc.
+
+Then you can use the r code genotypecall-plot.r to reproduce our figure 1.
+
+If you use other values, the C program will be fine, but the R code needs to be edited to 
+use the correct file names and axis labels etc.
