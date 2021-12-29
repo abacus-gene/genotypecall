@@ -16,8 +16,11 @@ the true base, and 0 the error.  Data is k, the number of 1's on p.20.
 To compile the program, using something like thie following
 
    cl -Ox genotypecall.c tools.c
+   
    gcc -o genotypecall -O3 genotypecall.c tools.c -lm
+   
    icc -o genotypecall -O3 genotypecall.c tools.c -lm
+   
    genotypecall
 
 
