@@ -13,7 +13,7 @@ The model is one of simple binomial sampling.  See equations (4.12),
 complex model.  Note that a homozygote has genotype 11: with 1 to be
 the true base, and 0 the error.  Data is k, the number of 1's on p.20.
 
-To compile the program, using something like thie following
+To compile the program, using something like one of the following
 
    cl -Ox genotypecall.c tools.c
    
