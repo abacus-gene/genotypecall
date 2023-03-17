@@ -1,18 +1,94 @@
 genotypecall
 
-Notes by Ziheng, 2021-4-1
+Notes by Ziheng, last modified 17 March 2023
 
-How to reproduce figure 1 in Thawornwattana1 et al. 2021.
+How to reproduce figure 1 in Thawornwattana1 et al. 2022.
 
 When you run the program, it will ask you to input the 
 per-read per-base error rate 
 Type a value and hit Enter.
 
 If you run the program multiple times, using the values 0.1, 0.05, 0.01, 0.005, 0.001, 
-the program will create summary results in the files 
-genotypecallingerror_e0.1.txt, genotypecallingerror_e0.05.txt, etc.
+the program will create summary results in the files genotypecallingerror_e0.1.txt, 
+genotypecallingerror_e0.05.txt, etc.
 
-Then you can use the r code genotypecall-plot.r to reproduce our figure 1.
+Then you can use the R code genotypecall-plot.r to reproduce our figure 1.
 
 If you use other values, the C program will be fine, but the R code needs to be edited to 
 use the correct file names and axis labels etc.
+
+Reference
+
+Thawornwattana Y, Seixas FA, Mallet J, Yang Z. 2022. Full-likelihood genomic analysis 
+clarifies a complex history of species divergence and introgression: the example of the 
+erato-sara group of Heliconius butterflies. Syst Biol 71:1159-1177.
+
+
+Sample calculations using base-calling error rate of 0.001 and 0.01.
+
+e = 0.001
+reads	homo_error	hetero_error
+
+2	0.0019990	0.5000000
+3	0.0029970	0.2500000
+4	0.0039940	0.1250000
+5	0.0049900	0.0625000
+6	0.0059850	0.0312500
+7	0.0069790	0.0156250
+8	0.0079721	0.0078125
+9	0.0089641	0.0039063
+10	0.0000448	0.0214844
+11	0.0000547	0.0117187
+12	0.0000656	0.0063477
+13	0.0000774	0.0034180
+14	0.0000903	0.0018311
+15	0.0001041	0.0009766
+16	0.0001189	0.0005188
+17	0.0001346	0.0002747
+18	0.0001514	0.0001450
+19	0.0001691	0.0000763
+20	0.0000011	0.0004025
+21	0.0000013	0.0002213
+22	0.0000015	0.0001211
+23	0.0000017	0.0000660
+24	0.0000020	0.0000359
+25	0.0000023	0.0000194
+26	0.0000026	0.0000105
+27	0.0000029	0.0000056
+28	0.0000032	0.0000030
+29	0.0000036	0.0000016
+30	0.0000000	0.0000084
+
+
+e=0.01
+reads	homo_error	hetero_error
+
+2	0.0199000	0.5000000
+3	0.0297010	0.2500000
+4	0.0394040	0.1250000
+5	0.0490100	0.0625000
+6	0.0585199	0.0312500
+7	0.0020310	0.1250000
+8	0.0026901	0.0703125
+9	0.0034357	0.0390625
+10	0.0042662	0.0214844
+11	0.0051797	0.0117187
+12	0.0061745	0.0063477
+13	0.0072489	0.0034180
+14	0.0003351	0.0129395
+15	0.0004158	0.0073853
+16	0.0005079	0.0041809
+17	0.0006122	0.0023499
+18	0.0007292	0.0013123
+19	0.0008594	0.0007286
+20	0.0010036	0.0004025
+21	0.0000522	0.0014896
+22	0.0000633	0.0008554
+23	0.0000761	0.0004883
+24	0.0000905	0.0002772
+25	0.0001069	0.0001565
+26	0.0001254	0.0000880
+27	0.0000067	0.0003107
+28	0.0000081	0.0001800
+29	0.0000097	0.0001037
+30	0.0000116	0.0000595

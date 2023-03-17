@@ -34,7 +34,7 @@ int GTerror_Exact(void)
    printf("\nper-read per-base error rate e = %.6g\n", e);
    sprintf(line, "genotypecallingerror_e%g.txt", e);
    fout = (FILE*)fopen(line, "w");
-   if (fout == NULL) error2("file open error");
+   if (fout == NULL) zerror("file open error");
 
    lne = log(e), ln1e = log(1 - e);
    fprintf(fout, "\n%s\t%s\t%s\n\n", "reads", "homo_error", "hetero_error");
@@ -51,7 +51,7 @@ int GTerror_Exact(void)
             lnL11 = k*ln1e + (n - k)*lne;
             if (iGT == 0) p = Binomial(n, k, &z)*exp(lnL11);
             else          p = Binomial(n, k, &z)*exp(lnL01);
-            if (z) error2("perhaps n is too large for this?");
+            if (z) zerror("perhaps n is too large for this?");
             if (lnL11 > lnL00 && lnL11 > lnL01)      GT = 2;
             else if (lnL01 > lnL00 && lnL01 > lnL11) GT = 1;
             else if (lnL00 > lnL01 && lnL00 > lnL11) GT = 0;
@@ -66,7 +66,7 @@ int GTerror_Exact(void)
          }
       }
       if (fabs(1 - psum[0]) > 1e-9 || fabs(1 - psum[1]) > 1e-9)
-         error2("pk does not sum to 1.");
+         zerror("pk does not sum to 1.");
       printf("\n%10sn = %2d  GTcallerror = %9.7f %10s %2d  GTcallerror = %9.7f\n", "", n, GTerror[0], "n =", n, GTerror[1]);
       fprintf(fout, "%d\t%.7f\t%.7f\n", n, GTerror[0], GTerror[1]);
    }
@@ -87,7 +87,7 @@ int GTerror_MC(void)
       e = e1x[ie], lne = log(e), ln1e = log(1 - e);
       sprintf(line, "genotypecallingerror_e%.g.txt", e);
       fout = (FILE*)fopen(line, "w");
-      if (fout == NULL) error2("file open error");
+      if (fout == NULL) zerror("file open error");
       printf("\nper-read per-base error rate = %.7f\n", e);
       printf("\n%s\t%s\t%s\n\n", "reads", "homo_error", "hetero_error");
       fprintf(fout, "\n%s\t%s\t%s\n\n", "reads", "homo_error", "hetero_error");
