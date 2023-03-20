@@ -21,6 +21,11 @@
 #include "paml.h"
 #define Maruki_Lynch 0
 
+int call_genotype(double lnL[3], double* dlnL);
+void GTerror_Exact(void);
+void GTerror_MC(void);
+void bias_GT_Exact(double GQstar);
+
 int call_genotype(double lnL[3], double* dlnL)
 {
    int index[3], space[3], GT;
@@ -37,18 +42,49 @@ int call_genotype(double lnL[3], double* dlnL)
    return (GT);
 }
 
-int GTerror_Exact(void)
+void GTerror_MC(void)
 {
-   int maxnreads = 30, n, k, iGT, GT;
-   double e = 0.01, lne, ln1e, lnL[3], dlnL, p, psum[2], GTerror[2], z;
-   char* GTstr[2] = { "homozygote 11", "heterozygote 01" }, * GTcalled[3] = { "00", "01", "11" };
+   int nr = 1000000, ir, n = 5, k, ie, iGT, GTe = 0;
+   double e, lne, ln1e, lnL[3], dlnL, GTerror[2];
+
+   printf("simulating %d replicates\n", nr);
+   printf("\ninput per-read per-base error rate? ");
+   scanf("%lf", &e);
+   printf("\nper-read per-base error rate e = %.6g\n", e);
+   SetSeed(-1, 0);
+   lne = log(e); ln1e = log(1 - e);
+   printf("\n%s\t%s\t%s\n\n", "reads", "homo_error", "hetero_error");
+   for (n = 2; n <= 30; n++) {
+      GTerror[0] = GTerror[1] = 0;
+      lnL[1] = -n * log(2.0);
+      for (iGT = 0; iGT < 2; iGT++) {  /* iGT0: homozygote (11), iGT1: heterozygote (01) */
+         for (ir = 0; ir < nr; ir++) {
+            if (iGT == 0) k = rndBinomial(n, 1 - e);  /* iGT0: homozygote (11) */
+            else          k = rndBinomial(n, 0.5);    /* iGT1: heterozygote (01) */
+            lnL[0] = (n - k) * ln1e + k * lne;  /* given GT = 00, data is (k, n - k)  */
+            lnL[2] = k * ln1e + (n - k) * lne;  /* given GT = 11, data is (k, n - k)  */
+            GTe = call_genotype(lnL, &dlnL);
+            if ((iGT == 0 && GTe != 2) || (iGT == 1 && GTe != 1))
+               GTerror[iGT] ++;
+         }
+      }
+      printf("%d\t%.6f\t%.6f\n", n, GTerror[0] / nr, GTerror[1] / nr);
+   }
+}
+
+void GTerror_Exact(void)
+{
+   int maxnreads = 30, n, k, GTe;
+   double e = 0.01, lne, ln1e, lnL[3], dlnL, pk[2], bnk, z, GTerror[2];
+   char* GTstr[3] = { "00", "01", "11" };
    FILE* fout;
    char line[1024] = "genotypecallingerror_e0.005.txt";
 
    if (Maruki_Lynch)
       printf("\n*** This mimics Maruki & Lynch 2017, figure 1 and applies LRT cutoff of 1.9207 *** ");
 
-   printf("\ninput per-read per-base error rate? ");
+   printf("calculating genotype calling error rate given read depth n and base-call error e\n");
+   printf("input per-read per-base error rate? ");
    scanf("%lf", &e);
    printf("\nper-read per-base error rate e = %.6g\n", e);
    sprintf(line, "genotypecallingerror_e%g.txt", e);
@@ -58,78 +94,68 @@ int GTerror_Exact(void)
    lne = log(e); ln1e = log(1 - e);
    fprintf(fout, "\n%s\t%s\t%s\n\n", "reads", "homo_error", "hetero_error");
    for (n = 2; n <= maxnreads; n++) {
-      printf("\n%s****** %s ****** %26s ****** %s ****** \n", "", GTstr[0], "", GTstr[1]);
-      printf(" n  k     prob    lnL11   lnL01   lnL00   dlnL  GT     ");
-      printf(" n  k     prob    lnL11   lnL01   lnL00   dlnL  GT\n");
+      printf(" n  k     lnL00    lnL01    lnL11   dlnL  GT  pk0(GT11) pk1(GT01)\n");
       GTerror[0] = GTerror[1] = 0;
-      psum[0] = psum[1] = 0;
       for (k = 0; k <= n; k++) {
-         for (iGT = 0; iGT < 2; iGT++) {    /* iGT0: homozygote(11), iGT1: heterozygote(01) */
-            lnL[1] = -n * log(2.0);
-            lnL[0] = (n - k) * ln1e + k * lne;
-            lnL[2] = k * ln1e + (n - k) * lne;
-            if (iGT == 0) p = Binomial(n, k, &z) * exp(lnL[2]);   /* homozygote(11)  */
-            else          p = Binomial(n, k, &z) * exp(lnL[1]);   /* heterozygote(01)  */
-            if (z) zerror("perhaps n is too large for this?");
-
-            GT = call_genotype(lnL, &dlnL);
-            if ((iGT == 0 && GT != 2) || (iGT == 1 && GT != 1))
-               GTerror[iGT] += p;
-            psum[iGT] += p;
-            printf("%2d %2d %8.4f %8.3f%8.3f%8.3f%7.2f %3s", n, k, p, lnL[2], lnL[1], lnL[0], dlnL, GTcalled[GT]);
-            printf(iGT ? "\n" : "     ");
-         }
+         lnL[1] = -n * log(2.0);
+         lnL[0] = (n - k) * ln1e + k * lne;
+         lnL[2] = k * ln1e + (n - k) * lne;
+         GTe = call_genotype(lnL, &dlnL);
+         bnk = Binomial(n, k, &z);
+         if (z) zerror("perhaps n is too large for this?");
+         pk[0] = bnk * exp(lnL[2]);   /* prob(k|GT 11) */
+         pk[1] = bnk * exp(lnL[1]);   /* prob(k|GT 01) */
+         if (GTe != 2) GTerror[0] += pk[0];
+         if (GTe != 1) GTerror[1] += pk[1];
+         printf("%2d %2d %9.3f%9.3f%9.3f%7.2f %3s %9.5f%9.5f\n", n, k, lnL[0], lnL[1], lnL[2], dlnL, GTstr[GTe], pk[0], pk[1]);
       }
-      if (fabs(1 - psum[0]) > 1e-9 || fabs(1 - psum[1]) > 1e-9)
-         zerror("pk does not sum to 1.");
-      printf("\nn = %2d  GTcallerror = %9.7f %26s %2d  GTcallerror = %9.7f\n", n, GTerror[0], "n =", n, GTerror[1]);
-      fprintf(fout, "%d\t%.7f\t%.7f\n", n, GTerror[0], GTerror[1]);
+      printf("\nn = %2d  GTcallerror (for GT 11, 01) = %10.6f %10.6f\n\n", n, GTerror[0], GTerror[1]);
+      fprintf(fout, "%d\t%.6f\t%.6f\n", n, GTerror[0], GTerror[1]);
    }
    fclose(fout);
 }
 
-int GTerror_MC(void)
+void bias_GT_Exact(double GQstar)
 {
-   int nr = 1000000, ir, n = 5, k, ie, iGT, GT = 0;
-   double e1x[3] = { 0.005, 0.01, 0.05 }, e, lne, ln1e;
-   double lnL[3], dlnL, GTerror[2];
-   FILE* fout;
-   char line[1024] = "genotypecallingerror_e0.005.txt";
+   /* GQ=20 means log(100)=4.60517 */
+   int maxnreads = 30, n, k, GTe;
+   double e = 0.01, theta = 0.01, dlnLstar = GQstar / 10 * log(10), pGTe[3], sGTe;
+   double lne, ln1e, lnL[3], dlnL, pk[2], bnk, z;
 
-   printf("\n***Simulating %d replicates\n", nr);
-   SetSeed(-1, 0);
-   for (ie = 0; ie < 3; ie++) {
-      e = e1x[ie]; lne = log(e); ln1e = log(1 - e);
-      sprintf(line, "genotypecallingerror_e%.g.txt", e);
-      fout = (FILE*)fopen(line, "w");
-      if (fout == NULL) zerror("file open error");
-      printf("\nper-read per-base error rate = %.7f\n", e);
-      printf("\n%s\t%s\t%s\n\n", "reads", "homo_error", "hetero_error");
-      fprintf(fout, "\n%s\t%s\t%s\n\n", "reads", "homo_error", "hetero_error");
-      for (n = 2; n <= 30; n++) {
-         GTerror[0] = GTerror[1] = 0;
-         lnL[1] = -n * log(2.0);
-         for (iGT = 0; iGT < 2; iGT++) {  /* iGT0: homozygote (11), iGT1: heterozygote (01) */
-            for (ir = 0; ir < nr; ir++) {
-               if (iGT == 0) k = rndBinomial(n, 1 - e);  /* iGT0: homozygote (11) */
-               else          k = rndBinomial(n, 0.5);    /* iGT1: heterozygote (01) */
-               lnL[0] = (n - k) * ln1e + k * lne;  /* given GT = 00, data is (k, n - k)  */
-               lnL[2] = k * ln1e + (n - k) * lne;  /* given GT = 11, data is (k, n - k)  */
-               GT = call_genotype(lnL, &dlnL);
-               if ((iGT == 0 && GT != 2) || (iGT == 1 && GT != 1))
-                  GTerror[iGT] ++;
-            }
-         }
-         printf("%d\t%.7f\t%.7f\n", n, GTerror[0] / nr, GTerror[1] / nr);
-         fprintf(fout, "%d\t%.7f\t%.7f\n", n, GTerror[0] / nr, GTerror[1] / nr);
+   printf("Estimating heterozygosity when GT is called using a GQ cutoff of %.1f\n", GQstar);
+   printf("\nper-read per-base error rate e = %.6g\nheterozygosity = theta = %.6g\n", e, theta);
+   printf("\n n   called genotypes (00 01 11)\n");
+
+   lne = log(e); ln1e = log(1 - e);
+   for (n = 2; n <= maxnreads; n++) {
+      pGTe[0] = pGTe[1] = pGTe[2] = 0;
+      for (k = 0; k <= n; k++) {
+         lnL[1] = -n * log(2.0);              /* 1: 01 */
+         lnL[0] = (n - k) * ln1e + k * lne;   /* 0: 00 */
+         lnL[2] = k * ln1e + (n - k) * lne;   /* 2: 11 */
+         GTe = call_genotype(lnL, &dlnL);
+         bnk = Binomial(n, k, &z);
+         if (z) zerror("perhaps n is too large for this?");
+         pk[0] = bnk * exp(lnL[2]);   /* prob(k|GT 11) */
+         pk[1] = bnk * exp(lnL[1]);   /* prob(k|GT 01) */
+         if (dlnL < dlnLstar) continue;
+         pGTe[GTe] += (1 - theta) * pk[0] + theta * pk[1];
       }
-      fclose(fout);
+      sGTe = pGTe[0] + pGTe[1] + pGTe[2];
+      printf("%2d %9.5f%9.5f%9.5f  h = %9.5f\n", n, pGTe[0], pGTe[1], pGTe[2], pGTe[1] / sGTe);
    }
 }
 
-void main(void)
+void main(int argc, char *argv[])
 {
-   GTerror_Exact();
-   /* GTerror_MC(); */
+   int option;
+   if (argc < 2) {
+      printf("Usage: \n\tgenotypecall 0: GTerror exact\n\tgenotypecall 1: GT error simulation\n\tgenotypecall 2: GT bias cutoff\n");
+      exit(0);
+   }
+   option = atoi(argv[1]);
+   if (option==0)         GTerror_Exact();
+   else if (option == 1)  GTerror_MC();
+   else if (option == 2)  bias_GT_Exact(20);
    exit(0);
 }
