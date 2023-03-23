@@ -24,3 +24,5 @@ To compile the program, using something like the following
 Li, H., 2011 A statistical framework for SNP calling, mutation
 discovery, association mapping and population genetical parameter
 estimation from sequencing data. Bioinformatics 27: 2987-2993.
+
+Thawornwattana Y, Seixas FA, Mallet J, Yang Z. 2022. Full-likelihood genomic analysis clarifies a complex history of species divergence and introgression: the example of the erato-sara group of Heliconius butterflies. Syst. Biol. 71:1159-1177.
